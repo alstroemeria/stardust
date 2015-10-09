@@ -15,7 +15,8 @@ var ctx = canvas.getContext('2d');
 var num_particles = 2000,
   size = 2,
   color = '#000'
-  field = false;
+  field = false
+  power = 5;
 
 var noise_settings = {
   lacunarity: 2,
@@ -90,13 +91,34 @@ ParticleSystem.prototype.draw = function () {
   }
 };
 
-window.onresize = function() {
-  initialize()
+ParticleSystem.prototype.shuffle = function () {
+  for (var i = 0; i < num_particles; i++) {
+    angle = Math.random()* 360;
+    rand_power = Math.random()* power/2;
+    this.particles[i].ax += rand_power * Math.cos(angle);
+    this.particles[i].ay += rand_power * Math.sin(angle);
+  }
 };
 
+var timeOut = null;
 
+window.onresize = function(){
+    if (timeOut != null)
+        clearTimeout(timeOut);
+
+    timeOut = setTimeout(function(){
+      dat.GUI.toggleHide();
+      initialize();
+    }, 500);
+};
+
+function starburst(){
+  particleSystem.shuffle();
+}
 
 function initialize(){
+  canvas.width =  window.innerWidth;
+  canvas.height =  window.innerHeight;
   var loader = document.querySelector(".loader");
   var bar = document.querySelector(".bar");
   var black = document.querySelector(".load").children[0];
@@ -163,6 +185,8 @@ worker.addEventListener('message', function(e) {
 }, false);
 
 
+
+
 var first = true;
 var particleSystem = new ParticleSystem();
 noise_data = new Uint8ClampedArray(canvas.height * canvas.width * 4);
@@ -176,6 +200,9 @@ f1.add(window, 'size').min(0.5).max(5).step(0.1).name('Size');
 f1.add(window, 'num_particles').min(100).max(10000).step(1).name('Amount').onFinishChange(function() {
   particleSystem = new ParticleSystem();
 });
+f1.add(window, 'power').min(1).max(10).step(1).name('Burst Power');
+f1.add(window, 'starburst').name('Starburst');
+
 f1.addColor(window, 'color').name('Color');
 
 var f2 = gui.addFolder('Noise Parameters');
@@ -192,10 +219,13 @@ gui.close();
 
 initialize();
 
+ctx.globalAlpha = 0.8;
 
 (function animate(){
   requestAnimFrame(animate);
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#FFF";
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+
   if (field){
     ctx.putImageData(noise_image, 0, 0);
   }
